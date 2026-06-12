@@ -41,8 +41,6 @@ public class NovaTechDbContext : DbContext
             e.Property(c => c.Name).HasMaxLength(200).IsRequired();
             e.Property(c => c.Email).HasMaxLength(200).IsRequired();
             e.HasIndex(c => c.Email).IsUnique();
-            e.Property(c => c.MonthlySpend).HasPrecision(18, 2);
-            e.Property(c => c.TotalSpend).HasPrecision(18, 2);
             // TODO: add index on (Status, Tier) for dashboard queries (NOVA-56)
         });
 
@@ -50,7 +48,6 @@ public class NovaTechDbContext : DbContext
         {
             e.HasKey(o => o.Id);
             e.Property(o => o.TotalAmount).HasPrecision(18, 2);
-            e.Property(o => o.DiscountAmount).HasPrecision(18, 2);
             e.HasMany(o => o.Items)
              .WithOne()
              .HasForeignKey("OrderId")
@@ -60,7 +57,6 @@ public class NovaTechDbContext : DbContext
         mb.Entity<OrderItem>(e =>
         {
             e.Property(i => i.UnitPrice).HasPrecision(18, 2);
-            e.Property(i => i.DiscountAmount).HasPrecision(18, 2);
         });
 
         mb.Entity<Invoice>(e =>
@@ -78,16 +74,11 @@ public class NovaTechDbContext : DbContext
              .WithOne()
              .HasForeignKey(li => li.InvoiceId)
              .OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(i => i.PaymentRecords)
-             .WithOne()
-             .HasForeignKey(p => p.InvoiceId)
-             .OnDelete(DeleteBehavior.Cascade);
         });
 
         mb.Entity<InvoiceLineItem>(e =>
         {
             e.Property(li => li.UnitPrice).HasPrecision(18, 2);
-            e.Property(li => li.Total).HasPrecision(18, 2);
         });
 
         mb.Entity<InvoicePaymentRecord>(e =>
@@ -132,11 +123,6 @@ public class NovaTechDbContext : DbContext
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        mb.Entity<ProductVariant>(e =>
-        {
-            e.Property(v => v.PriceModifier).HasPrecision(18, 2);
-        });
-
         mb.Entity<Inventory>(e =>
         {
             e.HasKey(i => i.Id);
@@ -165,8 +151,8 @@ public class NovaTechDbContext : DbContext
         mb.Entity<Discount>(e =>
         {
             e.HasKey(d => d.Id);
-            e.Property(d => d.Amount).HasPrecision(18, 2);
-            e.Property(d => d.MinOrderAmount).HasPrecision(18, 2);
+            e.Property(d => d.Value).HasPrecision(18, 2);
+            e.Property(d => d.MinimumOrderAmount).HasPrecision(18, 2);
             e.Property(d => d.MaxDiscountAmount).HasPrecision(18, 2);
             // filtered index so NULL codes (tier-based discounts) don't conflict
             e.HasIndex(d => d.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
@@ -181,7 +167,7 @@ public class NovaTechDbContext : DbContext
         mb.Entity<Report>(e =>
         {
             e.HasKey(r => r.Id);
-            e.HasIndex(r => new { r.RequestedByUserId, r.CreatedAt });
+            e.HasIndex(r => new { r.RequestedByUserId, r.RequestedAt });
         });
 
         mb.Entity<ReportSchedule>(e =>

@@ -18,11 +18,8 @@ public enum AuditAction
     BulkOperation
 }
 
-// AuditLog intentionally uses old-style namespace, was written before we standardized
-namespace NovaTechCRM.Domain.Models
+public class AuditLog
 {
-    public class AuditLog
-    {
         public long Id { get; set; }  // long for high-volume tables
 
         public AuditAction Action { get; set; }
@@ -74,4 +71,3 @@ namespace NovaTechCRM.Domain.Models
         public List<AuditLog> History { get; set; } = new();
         public int TotalCount { get; set; }
     }
-}

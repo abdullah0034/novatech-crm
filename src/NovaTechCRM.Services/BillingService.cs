@@ -130,7 +130,8 @@ public class BillingService : IBillingService
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "Monthly billing run finished: {Created} invoices created", invoicesToCreate.Count);
+            "Monthly billing run finished: {Created} invoices created for {Period:yyyy-MM}",
+            invoicesToCreate.Count, periodStart);
 
         return invoicesToCreate.Count;
     }

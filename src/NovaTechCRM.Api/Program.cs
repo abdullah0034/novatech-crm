@@ -99,6 +99,7 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<SearchService>();
 
 // ── Email ─────────────────────────────────────────────────────────────────────
@@ -150,6 +151,7 @@ builder.Services.AddHostedService<AuditFlushJob>();
 builder.Services.AddHostedService<InvoiceOverdueJob>();
 builder.Services.AddHostedService<InventoryCleanupJob>();
 builder.Services.AddHostedService<ReportSchedulerJob>();
+builder.Services.AddHostedService<MonthlyBillingJob>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // TODO: lock this down per environment — wildcard origin is fine for now (NOVA-80)

@@ -21,6 +21,11 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id, ct);
     }
 
+    public async Task<Order?> GetByFraudCheckIdAsync(string fraudCheckId, CancellationToken ct = default)
+        => await _db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.FraudCheckId == fraudCheckId, ct);
+
     public async Task<IReadOnlyList<Order>> GetByCustomerAsync(string customerId, CancellationToken ct = default)
     {
         return await _db.Orders

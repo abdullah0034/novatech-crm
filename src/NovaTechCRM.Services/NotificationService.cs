@@ -20,6 +20,13 @@ public class NotificationService : INotificationService
             order.Id, order.CustomerId);
     }
 
+    public async Task SendOrderRejectedAsync(Order order, CancellationToken ct = default)
+    {
+        await Task.Delay(100, ct);
+        _logger.LogInformation("Order rejection notice sent for {OrderId} to customer {CustomerId}",
+            order.Id, order.CustomerId);
+    }
+
     public async Task SendFraudAlertAsync(Order order, FraudCheckResult result, CancellationToken ct = default)
     {
         await Task.Delay(100, ct);

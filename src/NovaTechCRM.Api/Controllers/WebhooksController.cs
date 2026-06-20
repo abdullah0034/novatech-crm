@@ -11,12 +11,17 @@ namespace NovaTechCRM.Api.Controllers;
 public class WebhooksController : ControllerBase
 {
     private readonly IPaymentService _payments;
+    private readonly OrderService _orderService;
     private readonly ILogger<WebhooksController> _logger;
 
-    public WebhooksController(IPaymentService payments, ILogger<WebhooksController> logger)
+    public WebhooksController(
+        IPaymentService payments,
+        OrderService orderService,
+        ILogger<WebhooksController> logger)
     {
-        _payments = payments;
-        _logger   = logger;
+        _payments     = payments;
+        _orderService = orderService;
+        _logger       = logger;
     }
 
     [HttpPost("stripe")]
@@ -58,6 +63,32 @@ public class WebhooksController : ControllerBase
         return Ok();
     }
 
+    // FraudShield sends this when its async review of a high-risk order is complete.
+    // This is the missing handler that caused confirmed-but-never-fulfilled: without it,
+    // Approved orders never transitioned to Fulfilled (or Rejected), and ops had to
+    // manually intervene via the FraudShield dashboard.
+    [HttpPost("fraudshield")]
+    public async Task<IActionResult> FraudShield(
+        [FromBody] FraudShieldWebhookPayload payload, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(payload.CheckId))
+        {
+            _logger.LogWarning("FraudShield webhook arrived with missing CheckId");
+            return BadRequest();
+        }
+
+        _logger.LogInformation(
+            "FraudShield webhook received: checkId={CheckId}, status={Status}",
+            payload.CheckId, payload.Status);
+
+        await _orderService.HandleFraudWebhookAsync(
+            payload.CheckId,
+            approved: payload.Status == "approved",
+            ct);
+
+        return Ok();
+    }
+
     [HttpPost("fedex")]
     public async Task<IActionResult> FedEx()
     {
@@ -76,3 +107,7 @@ public class WebhooksController : ControllerBase
         return body;
     }
 }
+
+// FraudShield posts this JSON body when async review of a high-risk order completes.
+// "status" is either "approved" or "rejected".
+public record FraudShieldWebhookPayload(string CheckId, string Status);

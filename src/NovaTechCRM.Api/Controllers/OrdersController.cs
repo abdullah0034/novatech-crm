@@ -33,10 +33,23 @@ public class OrdersController : ControllerBase
 
         var placed = await _orderService.PlaceOrderAsync(order, ct);
 
-        if (placed.Status == OrderStatus.Rejected)
-            return UnprocessableEntity(new { error = "ORDER_REJECTED", message = "Order did not pass the fraud check and will not be fulfilled.", orderId = placed.Id });
+        return placed.Status switch
+        {
+            // Fraud check failed — order will never be fulfilled. Return 422 so
+            // clients don't treat this as a successful placement (previously returned
+            // 201 for all outcomes, causing the "confirmed but never fulfilled" reports).
+            OrderStatus.Rejected =>
+                UnprocessableEntity(new { error = "Order could not be accepted.", orderId = placed.Id }),
 
-        return CreatedAtAction(nameof(GetOrder), new { id = placed.Id }, placed);
+            // High-risk order: passed initial check, awaiting FraudShield async
+            // confirmation before fulfillment. Return 202 so the client knows to
+            // poll for status rather than assuming immediate fulfillment.
+            OrderStatus.Approved =>
+                AcceptedAtAction(nameof(GetOrder), new { id = placed.Id }, placed),
+
+            // Low-risk: synchronous check passed and order is already fulfilled.
+            _ => CreatedAtAction(nameof(GetOrder), new { id = placed.Id }, placed)
+        };
     }
 
     [HttpGet("{id:guid}")]

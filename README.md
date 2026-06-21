@@ -16,11 +16,9 @@ tests/
 
 ## Getting Started
 
-```bash
-dotnet restore
-dotnet build
-dotnet run --project src/NovaTechCRM.Api
-```
+This repository contains the NovaTech CRM source files. Project configuration, credentials, and infrastructure setup are managed separately by the NovaTech platform team and are not included here.
+
+Read the source code, make your fix, and open a PR. Your change will be compiled and verified automatically by the CI pipeline.
 
 ## Known Issues
 

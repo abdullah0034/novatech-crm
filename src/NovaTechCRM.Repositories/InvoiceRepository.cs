@@ -95,8 +95,8 @@ public class InvoiceRepository : IInvoiceRepository
         await _db.SaveChangesAsync(ct);
     }
 
-    // Uses raw SQL for atomic sequence — EF Core doesn't have a clean abstraction for this.
-    // The sequence table was added in migration v11; the SP does an UPDATE + SELECT in one round trip.
+    // The invoice sequence comes from a stored procedure, not EF Core.
+    // See src/NovaTechCRM.Infrastructure/Database/StoredProcedures/usp_GetNextInvoiceSequence.sql
     public async Task<int> GetNextSequenceAsync(int year, CancellationToken ct = default)
     {
         await using var conn = new SqlConnection(_connectionString);

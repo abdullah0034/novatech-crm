@@ -222,15 +222,30 @@ public class InvoiceService : IInvoiceService
 
         foreach (var invoice in overdue.Where(i => i.DueAt < now && i.AmountDue > 0))
         {
-            invoice.Status    = InvoiceStatus.Overdue;
-            invoice.UpdatedAt = now;
-            await _invoiceRepo.UpdateAsync(invoice, ct);
+            try
+            {
+                // Send first, flip status second. This method only ever re-scans invoices
+                // that are still Issued, so if the process dies (e.g. mid-deploy restart)
+                // before the notification completes, the invoice stays Issued and tomorrow's
+                // run retries both the send and the status change. Persisting Overdue first
+                // is what silently dropped notifications for invoices caught by a restart
+                // between the two steps (NOVA-123).
+                // TODO: add configurable grace period (NOVA-64)
+                await _notifications.SendInvoiceOverdueAsync(invoice, ct);
 
-            // send overdue notification — TODO: add configurable grace period (NOVA-64)
-            await _notifications.SendInvoiceOverdueAsync(invoice, ct);
+                invoice.Status    = InvoiceStatus.Overdue;
+                invoice.UpdatedAt = now;
+                await _invoiceRepo.UpdateAsync(invoice, ct);
 
-            _logger.LogWarning("Invoice {Number} marked overdue ({Days} days late)",
-                invoice.InvoiceNumber, (int)(now - invoice.DueAt).TotalDays);
+                _logger.LogWarning("Invoice {Number} marked overdue ({Days} days late)",
+                    invoice.InvoiceNumber, (int)(now - invoice.DueAt).TotalDays);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex,
+                    "Failed to send overdue notification for invoice {Number}; leaving status as Issued for retry",
+                    invoice.InvoiceNumber);
+            }
         }
     }
 
